@@ -28,12 +28,11 @@ steps: m6A calling, nucleosome calling and QC.
 
 ## 0. Setup
 
-Adjust these paths to your own system. The values below are for the VSC (KU Leuven) cluster.
+Adjust these paths to your own system. Here, we assume you are working on [HPC](https://en.wikipedia.org/wiki/High-performance_computing) cluster.
 
 ```bash
-WORKDIR=/scratch/leuven/338/vsc33857
-STAGING=/staging/leuven/stg_00096
-AWS_SIF=$STAGING/home/apancik/software/singularity/aws-cli_latest.sif
+WORKDIR=/path/to/workdir
+AWS_SIF=aws-cli_latest.sif
 SAM_SIF=samtools_1.24--h9dcdb79_1.sif
 FT_SIF=fibertools-rs_0.13.1--h270025b_0.sif
 THREADS=20
@@ -46,15 +45,17 @@ cd $WORKDIR
 The HPRC v2 Fiber-seq CRAMs are public, so no credentials are needed (`--no-sign-request`).
 
 ```bash
-apptainer run -B $VSC_SCRATCH -B $STAGING $AWS_SIF \
+apptainer run -B $WORKDIR $AWS_SIF \
   s3 cp --no-sign-request --endpoint-url https://s3.kopah.uw.edu \
   's3://stergachis/public/HPRCv2/FIRE-bams/GM12878_PM00001_PacBio.shared.ref.cram' .
 ```
 
 ## 2. Extract chromosome 20
 
+As the file is very large, for demonstration purposes, we will look at a single chromosome only.
+
 ```bash
-apptainer run -B $VSC_SCRATCH $SAM_SIF \
+apptainer run -B $WORKDIR $SAM_SIF \
   samtools view -b -o GM12878_PM00001.chr20.bam GM12878_PM00001_PacBio.shared.ref.cram chr20
 ```
 
@@ -63,7 +64,7 @@ apptainer run -B $VSC_SCRATCH $SAM_SIF \
 Check the starting coverage (about 120X):
 
 ```bash
-apptainer run -B $VSC_SCRATCH $SAM_SIF \
+apptainer run -B $WORKDIR $SAM_SIF \
   samtools coverage GM12878_PM00001.chr20.bam
 ```
 
@@ -71,25 +72,30 @@ Subsample 16% of reads. In `-s 42.16`, the integer part (`42`) is the random see
 fractional part (`.16`) is the fraction of reads kept, so ~120X × 0.16 ≈ 20X.
 
 ```bash
-apptainer run -B $VSC_SCRATCH $SAM_SIF \
+apptainer run -B $WORKDIR $SAM_SIF \
   samtools view -@ $THREADS -s 42.16 -o GM12878_PM00001.chr20.20x.bam GM12878_PM00001.chr20.bam
 ```
 
 ## 4. Remove existing nucleosome and accessibility calls
 
-The HPRC BAMs already contain fibertools annotations. This step removes the nucleosome
-(`ns`, `nl`) and actuated/accessible element (`as`, `al`) tags so we can recompute them ourselves.
+The HPRC BAMs already contain fibertools annotations. For demonstration purposes, we remove the nucleosome
+(`ns`, `nl`) and MTase sensitive patches (`as`, `al`) tags so we can recompute them ourselves.
 
 ```bash
-apptainer run -B $VSC_SCRATCH $SAM_SIF \
+apptainer run -B $WORKDIR $SAM_SIF \
   samtools view -b -x ns,nl,as,al -@ $THREADS \
   -o GM12878_PM00001.chr20.20x.strip.bam GM12878_PM00001.chr20.20x.bam
 ```
 
 ## 5. Predict m6A
 
+This step is not needed for the files we use in this demonstration, but you will need to run this on your data, or raw unprocessed data. 
+
+> [!NOTE]
+> This step would not be needed for ONT data as Dorado modified basecalling does this.
+
 ```bash
-apptainer run -B $VSC_SCRATCH $FT_SIF \
+apptainer run -B $WORKDIR $FT_SIF \
   ft predict-m6a -t $THREADS \
   GM12878_PM00001.chr20.20x.strip.bam \
   GM12878_PM00001.chr20.20x.strip.m6a.bam
@@ -98,21 +104,21 @@ apptainer run -B $VSC_SCRATCH $FT_SIF \
 ## 6. Call nucleosomes and index
 
 ```bash
-apptainer run -B $VSC_SCRATCH $FT_SIF \
+apptainer run -B $WORKDIR $FT_SIF \
   ft add-nucleosomes -t $THREADS \
   GM12878_PM00001.chr20.20x.strip.m6a.bam \
   GM12878_PM00001.chr20.20x.strip.m6a.nuc.bam
 
-apptainer run -B $VSC_SCRATCH $SAM_SIF \
+apptainer run -B $WORKDIR $SAM_SIF \
   samtools index -@ $THREADS GM12878_PM00001.chr20.20x.strip.m6a.nuc.bam
 ```
 
 ## 7. Quality control
 
-`--acf` adds the m6A autocorrelation, which shows the nucleosome repeat pattern.
+`--acf` adds the m6A autocorrelation, which shows the nucleosome repeat pattern - very imporant for QC checking.
 
 ```bash
-apptainer run -B $VSC_SCRATCH $FT_SIF \
+apptainer run -B $WORKDIR $FT_SIF \
   ft qc --acf GM12878_PM00001.chr20.20x.strip.m6a.nuc.bam > qc.tab
 ```
 
@@ -122,9 +128,8 @@ apptainer run -B $VSC_SCRATCH $FT_SIF \
 #!/usr/bin/env bash
 set -euo pipefail
 
-WORKDIR=/scratch/leuven/338/vsc33857
-STAGING=/staging/leuven/stg_00096
-AWS_SIF=$STAGING/home/apancik/software/singularity/aws-cli_latest.sif
+WORKDIR=/path/to/workdir
+AWS_SIF=aws-cli_latest.sif
 SAM_SIF=samtools_1.24--h9dcdb79_1.sif
 FT_SIF=fibertools-rs_0.13.1--h270025b_0.sif
 THREADS=20
@@ -132,23 +137,36 @@ PREFIX=GM12878_PM00001.chr20
 
 cd $WORKDIR
 
-apptainer run -B $VSC_SCRATCH -B $STAGING $AWS_SIF \
+apptainer run -B $WORKDIR $AWS_SIF \
   s3 cp --no-sign-request --endpoint-url https://s3.kopah.uw.edu \
   's3://stergachis/public/HPRCv2/FIRE-bams/GM12878_PM00001_PacBio.shared.ref.cram' .
 
-apptainer run -B $VSC_SCRATCH $SAM_SIF samtools view -b -o $PREFIX.bam \
+apptainer run -B $WORKDIR $SAM_SIF samtools view -b -o $PREFIX.bam \
   GM12878_PM00001_PacBio.shared.ref.cram chr20
-apptainer run -B $VSC_SCRATCH $SAM_SIF samtools coverage $PREFIX.bam
-apptainer run -B $VSC_SCRATCH $SAM_SIF samtools view -@ $THREADS -s 42.16 \
+apptainer run -B $WORKDIR $SAM_SIF samtools coverage $PREFIX.bam
+apptainer run -B $WORKDIR $SAM_SIF samtools view -@ $THREADS -s 42.16 \
   -o $PREFIX.20x.bam $PREFIX.bam
-apptainer run -B $VSC_SCRATCH $SAM_SIF samtools view -b -x ns,nl,as,al -@ $THREADS \
+apptainer run -B $WORKDIR $SAM_SIF samtools view -b -x ns,nl,as,al -@ $THREADS \
   -o $PREFIX.20x.strip.bam $PREFIX.20x.bam
-
-apptainer run -B $VSC_SCRATCH $FT_SIF ft predict-m6a -t $THREADS \
+apptainer run -B $WORKDIR $FT_SIF ft predict-m6a -t $THREADS \
   $PREFIX.20x.strip.bam $PREFIX.20x.strip.m6a.bam
-apptainer run -B $VSC_SCRATCH $FT_SIF ft add-nucleosomes -t $THREADS \
+apptainer run -B $WORKDIR $FT_SIF ft add-nucleosomes -t $THREADS \
   $PREFIX.20x.strip.m6a.bam $PREFIX.20x.strip.m6a.nuc.bam
-apptainer run -B $VSC_SCRATCH $SAM_SIF samtools index -@ $THREADS $PREFIX.20x.strip.m6a.nuc.bam
+apptainer run -B $WORKDIR $SAM_SIF samtools index -@ $THREADS $PREFIX.20x.strip.m6a.nuc.bam
 
-apptainer run -B $VSC_SCRATCH $FT_SIF ft qc --acf $PREFIX.20x.strip.m6a.nuc.bam > qc.tab
+apptainer run -B $WORKDIR $FT_SIF ft qc --acf $PREFIX.20x.strip.m6a.nuc.bam > qc.tab
 ```
+
+## IGV visualisation
+Important part is data visualisation. Install a recent [IGV](https://igv.org/doc/desktop/#DownloadPage/) version and visualise your bam file. Make sure you index it first. 
+
+To look at modified bases, right click on the left panel with bam file name, select `color alignments by` and then `base modifications (6mA)` - or 5mC.
+
+We recommend to check
+-  modification patterns at TSS of some highly expressed genes - you should see high accessibility, 
+- imprinted regions - you should see haplotype specific methylation patterns
+- CTCF sites (you can load ENCODE ChIP data directly from URL)
+
+
+## FIRE elements
+# TODO 
