@@ -87,12 +87,10 @@ apptainer run -B $WORKDIR $SAM_SIF \
   -o GM12878_PM00001.chr20.20x.strip.bam GM12878_PM00001.chr20.20x.bam
 ```
 
-## 5. Predict m6A
-
-This step is not needed for the files we use in this demonstration, but you will need to run this on your data, or raw unprocessed data. 
+## 5. Predict m6A (Optional)
 
 > [!NOTE]
-> This step would not be needed for ONT data as Dorado modified basecalling does this.
+> This step is not needed for the files we use in this demonstration, but you may need to run this on your data. This step is not be needed for ONT data as Dorado modified basecalling does this, and for any new PacBio data, as m6A are called internally by Jasmine.
 
 ```bash
 apptainer run -B $WORKDIR $FT_SIF \
@@ -121,6 +119,36 @@ apptainer run -B $WORKDIR $SAM_SIF \
 apptainer run -B $WORKDIR $FT_SIF \
   ft qc --acf GM12878_PM00001.chr20.20x.strip.m6a.nuc.bam > qc.tab
 ```
+
+We will now plot some of the outputs from `qc.tab`, but you may want to check out following repository for Fibertools comprehensive report: https://github.com/fiberseq/fiberseq-qc. 
+
+### QC plotting
+
+
+## IGV visualisation
+Important part is data visualisation. Install a recent [IGV](https://igv.org/doc/desktop/#DownloadPage/) version and visualise your bam file. Make sure you index it first. 
+
+To look at modified bases, right click on the left panel with bam file name, select `color alignments by` and then `base modifications (6mA)` - or 5mC.
+
+We recommend to check
+-  modification patterns at TSS of some highly expressed genes - you should see high accessibility, 
+- imprinted regions - you should see haplotype specific methylation patterns
+- CTCF sites (you can load ENCODE ChIP data directly from URL)
+
+## FIRE elements
+
+FIRE stands for Fiber-seq Inferred Regulatory Elements and you can think of them as a Fiber-seq equivalent of peaks from ATAC-seq. 
+
+To call FIRE elements and to create BigWig tracks, you need whole genome data. Since we are only working with one chromosome here, we will run `ft fire` to annotate our reads with fire calls. 
+
+```
+apptainer run -B $WORKDIR $FT_SIF ft fire -t $THREADS \
+  $PREFIX.20x.strip.m6a.nuc.bam $PREFIX.20x.strip.m6a.nuc.fire.bam
+```
+
+To see how to install the FIRE Snakemake pipeline environment and how to run the full pipeline, you can follow the tutorial here: https://fiberseq.github.io/fire/run.html
+
+Luckily for us, FIRE developers share the results for the GM12878 cell line we are looking as at the moment, so let's explore the pipeline outputs!
 
 ## Full script
 
@@ -153,20 +181,7 @@ apptainer run -B $WORKDIR $FT_SIF ft predict-m6a -t $THREADS \
 apptainer run -B $WORKDIR $FT_SIF ft add-nucleosomes -t $THREADS \
   $PREFIX.20x.strip.m6a.bam $PREFIX.20x.strip.m6a.nuc.bam
 apptainer run -B $WORKDIR $SAM_SIF samtools index -@ $THREADS $PREFIX.20x.strip.m6a.nuc.bam
-
 apptainer run -B $WORKDIR $FT_SIF ft qc --acf $PREFIX.20x.strip.m6a.nuc.bam > qc.tab
+apptainer run -B $WORKDIR $FT_SIF ft fire -t $THREADS \
+  $PREFIX.20x.strip.m6a.nuc.bam $PREFIX.20x.strip.m6a.nuc.fire.bam
 ```
-
-## IGV visualisation
-Important part is data visualisation. Install a recent [IGV](https://igv.org/doc/desktop/#DownloadPage/) version and visualise your bam file. Make sure you index it first. 
-
-To look at modified bases, right click on the left panel with bam file name, select `color alignments by` and then `base modifications (6mA)` - or 5mC.
-
-We recommend to check
--  modification patterns at TSS of some highly expressed genes - you should see high accessibility, 
-- imprinted regions - you should see haplotype specific methylation patterns
-- CTCF sites (you can load ENCODE ChIP data directly from URL)
-
-
-## FIRE elements
-# TODO 
