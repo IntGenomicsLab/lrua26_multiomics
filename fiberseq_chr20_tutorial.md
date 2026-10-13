@@ -1,6 +1,6 @@
 # Fiber-seq hands-on: from HPRC CRAM to m6A, nucleosomes and QC (chr20, GM12878)
 
-This tutorial takes a public PacBio Fiber-seq dataset (GM12878, HPRC v2), cuts it down to
+This is a short tutorial that aims to quickly demonstrate how to process and visualise Fiber-seq data. WE take a public PacBio Fiber-seq dataset (GM12878, HPRC v2), cuts it down to
 chromosome 20 at ~20X coverage, and runs the core [fibertools-rs](https://fiberseq.github.io/fibertools/fibertools.html)
 steps: m6A calling, nucleosome calling and QC.
 
@@ -14,7 +14,9 @@ steps: m6A calling, nucleosome calling and QC.
 | 4. Strip existing calls | samtools | `GM12878_PM00001.chr20.20x.strip.bam` |
 | 5. Predict m6A | `ft predict-m6a` | `...strip.m6a.bam` |
 | 6. Call nucleosomes | `ft add-nucleosomes` | `...strip.m6a.nuc.bam` (+ `.bai`) |
-| 7. QC | `ft qc` | `qc.tab` |
+| 7a. QC | `ft qc` | `qc.tab` |
+| 7b. QC | `fibertools_qc_check.ipynb` | visualisationsß |
+| 8. FIRE | `ft fire`| `...strip.m6a.nuc.fire.bam` |
 
 ## Requirements
 
@@ -113,17 +115,24 @@ apptainer run -B $WORKDIR $SAM_SIF \
 
 ## 7. Quality control
 
+First and foremost, you sequencing has to be good (think coverage, read N50, Q30..). Once that is checked, we go and QC our Fiber-seq data. 
+
 `--acf` adds the m6A autocorrelation, which shows the nucleosome repeat pattern - very imporant for QC checking.
+
+`--acf-max-lag 2000` - allows us to get longer autocorrelation lag - very helpful for some QC metric plotting and calculation
 
 ```bash
 apptainer run -B $WORKDIR $FT_SIF \
-  ft qc --acf GM12878_PM00001.chr20.20x.strip.m6a.nuc.bam > qc.tab
+  ft qc --acf --acf-max-lag 2000 GM12878_PM00001.chr20.20x.strip.m6a.nuc.bam > sample_qc.tab
 ```
 
-We will now plot some of the outputs from `qc.tab`, but you may want to check out following repository for Fibertools comprehensive report: https://github.com/fiberseq/fiberseq-qc. 
+We will now plot some of the outputs from `sample_qc.tab`, but you may want to check out following repository for Fibertools comprehensive report: https://github.com/fiberseq/fiberseq-qc. 
 
 ### QC plotting
 
+`sample_qc.tab` holds a lot of information, and to make some sense of it, we will plot it. You can navigate and check out [fibertools_qc_check.ipynb](fibertools_qc_check.ipynb). 
+
+Focus on the methylation rate, the sizes of nucleosomes and methylation sensitive patches (MSPs), and autocorrelation curve. 
 
 ## IGV visualisation
 Important part is data visualisation. Install a recent [IGV](https://igv.org/doc/desktop/#DownloadPage/) version and visualise your bam file. Make sure you index it first. 
@@ -148,7 +157,16 @@ apptainer run -B $WORKDIR $FT_SIF ft fire -t $THREADS \
 
 To see how to install the FIRE Snakemake pipeline environment and how to run the full pipeline, you can follow the tutorial here: https://fiberseq.github.io/fire/run.html
 
-Luckily for us, FIRE developers share the results for the GM12878 cell line we are looking as at the moment, so let's explore the pipeline outputs!
+Luckily for us, FIRE developers share the results for the GM12878 cell line we are looking as at the moment, so let's visualise the pipeline outputs! 
+
+There are multiple ways to visualise FIRE pipeline outputs
+
+1. **IGV** <br>
+You load `{sample}-fire-{v}-peaks.bed.gz` and `{sample}-fire-{v}-hap-differences.bed.gz` to IGV together with your CRAM or BAM file. This will allow you to obersve FIRE regions visually
+
+2. **UCSC tracks**
+As output from FIRE pipeline, you also get UCSC track that you can load to UCSC via My data > Track hubs. 
+More info on that here: https://github.com/fiberseq/UCSC-Fiber-seq-hub 
 
 ## Full script
 
