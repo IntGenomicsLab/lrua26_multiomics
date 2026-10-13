@@ -159,10 +159,18 @@ To see how to install the FIRE Snakemake pipeline environment and how to run the
 
 Luckily for us, FIRE developers share the results for the GM12878 cell line we are looking as at the moment, so let's visualise the pipeline outputs! 
 
+Download all the FIRE elements, and haplotype specific FIRE calls for GM12878:
+
+```
+apptainer run -B $WORKDIR $AWS_SIF s3  cp  --no-sign-request --endpoint-url https://s3.kopah.uw.edu 's3://stergachis/public/FIRE/broadly-consented/GM12878/GM12878-fire-v0.1-peaks.bed.gz' GM12878-fire-v0.1-peaks.bed.gz
+
+apptainer run -B $WORKDIR $AWS_SIF s3  cp  --no-sign-request --endpoint-url https://s3.kopah.uw.edu 's3://stergachis/public/FIRE/broadly-consented/GM12878/GM12878-fire-v0.1-hap-differences.bed.gz' GM12878-fire-v0.1-hap-differences.bed.gz
+```
+
 There are multiple ways to visualise FIRE pipeline outputs
 
 1. **IGV** <br>
-You load `{sample}-fire-{v}-peaks.bed.gz` and `{sample}-fire-{v}-hap-differences.bed.gz` to IGV together with your CRAM or BAM file. This will allow you to obersve FIRE regions visually
+You load `GM12878-fire-v0.1-hap-differences.bed.gz` and `GM12878-fire-v0.1-hap-differences.bed.gz` to IGV together with your CRAM or BAM file. This will allow you to observe FIRE regions visually
 
 2. **UCSC tracks**
 As output from FIRE pipeline, you also get UCSC track that you can load to UCSC via My data > Track hubs. 
@@ -199,7 +207,10 @@ apptainer run -B $WORKDIR $FT_SIF ft predict-m6a -t $THREADS \
 apptainer run -B $WORKDIR $FT_SIF ft add-nucleosomes -t $THREADS \
   $PREFIX.20x.strip.m6a.bam $PREFIX.20x.strip.m6a.nuc.bam
 apptainer run -B $WORKDIR $SAM_SIF samtools index -@ $THREADS $PREFIX.20x.strip.m6a.nuc.bam
-apptainer run -B $WORKDIR $FT_SIF ft qc --acf $PREFIX.20x.strip.m6a.nuc.bam > qc.tab
+apptainer run -B $WORKDIR $FT_SIF ft qc --acf $PREFIX.20x.strip.m6a.nuc.bam > sample_qc.tab
 apptainer run -B $WORKDIR $FT_SIF ft fire -t $THREADS \
   $PREFIX.20x.strip.m6a.nuc.bam $PREFIX.20x.strip.m6a.nuc.fire.bam
+
+apptainer run -B $WORKDIR $AWS_SIF s3  cp  --no-sign-request --endpoint-url https://s3.kopah.uw.edu 's3://stergachis/public/FIRE/broadly-consented/GM12878/GM12878-fire-v0.1-peaks.bed.gz' GM12878-fire-v0.1-peaks.bed.gz
+apptainer run -B $WORKDIR $AWS_SIF s3  cp  --no-sign-request --endpoint-url https://s3.kopah.uw.edu 's3://stergachis/public/FIRE/broadly-consented/GM12878/GM12878-fire-v0.1-hap-differences.bed.gz' GM12878-fire-v0.1-hap-differences.bed.gz
 ```
