@@ -18,7 +18,7 @@ steps: m6A calling, nucleosome calling and QC.
 
 ## Requirements
 
-- [conda](https://docs.conda.io/) (we recommend [Miniforge](https://github.com/conda-forge/miniforge))or [pixi](https://pixi.prefix.dev/latest/), on Linux or macOS
+- [conda](https://docs.conda.io/) (we recommend [Miniforge](https://github.com/conda-forge/miniforge)) or [pixi](https://pixi.prefix.dev/latest/), on Linux or macOS
 - The conda environment in [environment.yml](environment.yml), which contains everything used in this tutorial:
   [SAMtools](http://www.htslib.org/) 1.24, [fibertools-rs](https://github.com/fiberseq/fibertools-rs) 0.13.1,
   and Python + JupyterLab for the QC notebook.
