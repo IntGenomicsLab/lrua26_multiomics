@@ -1,0 +1,18 @@
+[workspace]
+channels = ["conda-forge", "bioconda"]
+name = "fiberseq-tutorial"
+platforms = ["osx-arm64", "linux-64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+python = "3.12.*"
+samtools = "1.24.*"
+fibertools-rs = "0.13.1.*"
+jupyterlab = "4.6.4.*"
+ipykernel = "*"
+numpy = "2.5.4.*"
+pandas = "3.1.0.*"
+matplotlib = "3.11.2.*"
+scipy = "1.18.1.*"

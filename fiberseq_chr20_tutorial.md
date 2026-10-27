@@ -18,27 +18,57 @@ steps: m6A calling, nucleosome calling and QC.
 
 ## Requirements
 
-- [conda](https://docs.conda.io/) (we recommend [Miniforge](https://github.com/conda-forge/miniforge)), on Linux or macOS
+- [conda](https://docs.conda.io/) (we recommend [Miniforge](https://github.com/conda-forge/miniforge)) or [pixi](https://pixi.prefix.dev/latest/), on Linux or macOS
 - The conda environment in [environment.yml](environment.yml), which contains everything used in this tutorial:
   [SAMtools](http://www.htslib.org/) 1.24, [fibertools-rs](https://github.com/fiberseq/fibertools-rs) 0.13.1,
   and Python + JupyterLab for the QC notebook.
 
 ## 0. Setup
 
-Clone this repository and create the environment (only needed once):
+Clone this repository 
 
 ```bash
 git clone https://github.com/IntGenomicsLab/lrua26_multiomics.git
 cd lrua26_multiomics
+```
+
+Next, create the environment using [conda](#01-create-and-start-conda-environment) or alternatively [pixi](#02-create-and-start-pixi-environment)
+## 0.1. Create and start conda environment
+
+Once you have conda installed, create the environment from the `environment.yml` file:
+
+```bash
 conda env create -f environment.yml
 ```
 
-Activate it every time you start working, and set a few variables. Adjust `WORKDIR` and `THREADS` to your own system - this runs fine on a laptop, but is faster on an [HPC](https://en.wikipedia.org/wiki/High-performance_computing) cluster.
+Activate it every time you start working
 
 ```bash
 conda activate fiberseq-tutorial
+```
 
-WORKDIR=/path/to/workdir
+## 0.2. Create and start pixi environment
+
+Alternatively to using conda, you can use [pixi](https://pixi.prefix.dev/latest/) to create and manage the environment.
+
+Create the environment from the `pixi.lock` (or `pixi.toml`) file:
+
+```bash
+pixi install
+```
+
+Start a shell in the environment:
+
+```bash
+pixi shell
+```
+
+## 0.3. Set up the working directory
+
+Finally, set up the working directory and a few variables. Adjust `WORKDIR` and `THREADS` to your own system - this runs fine on a laptop, but is faster on an [HPC](https://en.wikipedia.org/wiki/High-performance_computing) cluster.
+
+```bash
+WORKDIR=results
 THREADS=4
 PREFIX=GM12878_PM00001.chr20
 DATA_URL=https://zenodo.org/records/23596422/files
@@ -111,10 +141,9 @@ We will now plot some of the outputs from `sample_qc.tab`, but you may want to c
 
 `sample_qc.tab` holds a lot of information, and to make some sense of it, we will plot it. You can navigate and check out [fibertools_qc_check.ipynb](fibertools_qc_check.ipynb). 
 
-The notebook runs in the same conda environment. From the repository folder, start JupyterLab:
+The notebook runs in the same conda/pixi environment. From the repository folder, start JupyterLab:
 
 ```bash
-conda activate fiberseq-tutorial
 jupyter lab fibertools_qc_check.ipynb
 ```
 
@@ -172,7 +201,7 @@ Run inside the activated `fiberseq-tutorial` environment.
 #!/usr/bin/env bash
 set -euo pipefail
 
-WORKDIR=/path/to/workdir
+WORKDIR=results
 THREADS=4
 PREFIX=GM12878_PM00001.chr20
 DATA_URL=https://zenodo.org/records/23596422/files
