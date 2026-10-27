@@ -21,7 +21,7 @@ steps: m6A calling, nucleosome calling and QC.
 - [conda](https://docs.conda.io/) (we recommend [Miniforge](https://github.com/conda-forge/miniforge)) or [pixi](https://pixi.prefix.dev/latest/), on Linux or macOS
 - The conda environment in [environment.yml](environment.yml), which contains everything used in this tutorial:
   [SAMtools](http://www.htslib.org/) 1.24, [fibertools-rs](https://github.com/fiberseq/fibertools-rs) 0.13.1,
-  and Python + JupyterLab for the QC notebook.
+  [aws-cli](https://aws.amazon.com/cli/) 2.38.3 (to download public FIRE outputs from S3), and Python + JupyterLab for the QC notebook.
 
 ## 0. Setup
 
@@ -85,17 +85,20 @@ We start from a public PacBio Fiber-seq dataset of GM12878 from HPRC v2. The ful
 curl -L -O $DATA_URL/$PREFIX.20x.bam
 ```
 
-Index the BAM and check the coverage (about 20X):
+Index the BAM and check the coverage on chr20 (about 20X):
 
 ```bash
 samtools index $PREFIX.20x.bam
-samtools coverage $PREFIX.20x.bam
+samtools coverage -r chr20 $PREFIX.20x.bam
 ```
 
 ## 2. Remove existing nucleosome and accessibility calls
 
-The HPRC BAMs already contain fibertools annotations. For demonstration purposes, we remove the nucleosome
+The HPRC BAMs already contain fibertools annotations. For demonstration purposes, we remove the old nucleosome
 (`ns`, `nl`) and MTase sensitive patches (`as`, `al`) tags so we can recompute them ourselves.
+
+> [!NOTE]
+> Technically, we do not need to strip these fibertools annotations, as Fiberools developers now propose new encoding scheme with `Ma`/`Aq`/`An`. See more details here: https://github.com/samtools/hts-specs/pull/862
 
 ```bash
 samtools view -b -x ns,nl,as,al -@ $THREADS \
@@ -179,9 +182,11 @@ Luckily for us, FIRE developers share the results for the GM12878 cell line we a
 Download all the FIRE elements, and haplotype specific FIRE calls for GM12878:
 
 ```bash
-FIRE_URL=https://s3.kopah.uw.edu/stergachis/public/FIRE/broadly-consented/GM12878
-curl -L -O $FIRE_URL/GM12878-fire-v0.1-peaks.bed.gz
-curl -L -O $FIRE_URL/GM12878-fire-v0.1-hap-differences.bed.gz
+FIRE_S3=s3://stergachis/public/FIRE/broadly-consented/GM12878
+aws s3 cp --no-sign-request --endpoint-url https://s3.kopah.uw.edu \
+  $FIRE_S3/GM12878-fire-v0.1-peaks.bed.gz .
+aws s3 cp --no-sign-request --endpoint-url https://s3.kopah.uw.edu \
+  $FIRE_S3/GM12878-fire-v0.1-hap-differences.bed.gz .
 ```
 
 There are multiple ways to visualise FIRE pipeline outputs
@@ -205,7 +210,7 @@ WORKDIR=results
 THREADS=4
 PREFIX=GM12878_PM00001.chr20
 DATA_URL=https://zenodo.org/records/23596422/files
-FIRE_URL=https://s3.kopah.uw.edu/stergachis/public/FIRE/broadly-consented/GM12878
+FIRE_S3=s3://stergachis/public/FIRE/broadly-consented/GM12878
 
 mkdir -p $WORKDIR
 cd $WORKDIR
@@ -222,16 +227,17 @@ samtools index -@ $THREADS $PREFIX.20x.strip.nuc.bam
 ft qc --acf --acf-max-lag 2000 $PREFIX.20x.strip.nuc.bam > sample_qc.tab
 ft fire -t $THREADS $PREFIX.20x.strip.nuc.bam $PREFIX.20x.strip.nuc.fire.bam
 
-curl -L -O $FIRE_URL/GM12878-fire-v0.1-peaks.bed.gz
-curl -L -O $FIRE_URL/GM12878-fire-v0.1-hap-differences.bed.gz
+aws s3 cp --no-sign-request --endpoint-url https://s3.kopah.uw.edu \
+  $FIRE_S3/GM12878-fire-v0.1-peaks.bed.gz .
+aws s3 cp --no-sign-request --endpoint-url https://s3.kopah.uw.edu \
+  $FIRE_S3/GM12878-fire-v0.1-hap-differences.bed.gz .
 ```
 
 ## How the subset was made
 
 You do not need to run this - it is how the chr20 ~20X file in step 1 was created.
 The HPRC v2 Fiber-seq CRAMs are public, so no credentials are needed (`--no-sign-request`).
-This needs [aws-cli](https://aws.amazon.com/cli/), which is not part of the tutorial environment
-(install it with e.g. `conda install -c conda-forge awscli`).
+This uses [aws-cli](https://aws.amazon.com/cli/), which is included in the tutorial environment.
 
 Download the CRAM and its index:
 
