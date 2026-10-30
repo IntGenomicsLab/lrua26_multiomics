@@ -11,7 +11,7 @@ In case of questions about this workshop, feel free to open an issue or get in t
 
 ### Citations
 Majority of the tutorial relies on tools and data produced by the lab of Andrew Stergachis. 
-Pleease cite relevant publictaions when using the data or tools
+Please cite relevant publications when using the data or tools
 
 **Fiber-seq method**
 ```

@@ -32,7 +32,8 @@ git clone https://github.com/IntGenomicsLab/lrua26_multiomics.git
 cd lrua26_multiomics
 ```
 
-Next, create the environment using [conda](#01-create-and-start-conda-environment) or alternatively [pixi](#02-create-and-start-pixi-environment)
+Next, create the environment using [conda](#01-create-and-start-conda-environment) or alternatively [pixi](#02-create-and-start-pixi-environment).
+
 ## 0.1. Create and start conda environment
 
 Once you have conda installed, create the environment from the `environment.yml` file:
@@ -98,7 +99,7 @@ The HPRC BAMs already contain fibertools annotations. For demonstration purposes
 (`ns`, `nl`) and MTase sensitive patches (`as`, `al`) tags so we can recompute them ourselves.
 
 > [!NOTE]
-> Technically, we do not need to strip these fibertools annotations, as Fiberools developers now propose new encoding scheme with `Ma`/`Aq`/`An`. See more details here: https://github.com/samtools/hts-specs/pull/862
+> Technically, we do not need to strip these fibertools annotations, as Fibertools developers now propose new encoding scheme with `Ma`/`Aq`/`An`. See more details here: https://github.com/samtools/hts-specs/pull/862
 
 ```bash
 samtools view -b -x ns,nl,as,al -@ $THREADS \
@@ -130,7 +131,7 @@ samtools index -@ $THREADS $PREFIX.20x.strip.nuc.bam
 
 First and foremost, you sequencing has to be good (think coverage, read N50, Q30..). Once that is checked, we go and QC our Fiber-seq data. 
 
-`--acf` adds the m6A autocorrelation, which shows the nucleosome repeat pattern - very imporant for QC checking.
+`--acf` adds the m6A autocorrelation, which shows the nucleosome repeat pattern - very important for QC checking.
 
 `--acf-max-lag 2000` - allows us to get longer autocorrelation lag - very helpful for some QC metric plotting and calculation
 
@@ -155,12 +156,12 @@ Set `QC_FILE` in the notebook to the path of your `sample_qc.tab` (e.g. `/path/t
 Focus on the methylation rate, the sizes of nucleosomes and methylation sensitive patches (MSPs), and autocorrelation curve. 
 
 ## IGV visualisation
-Important part is data visualisation. Install a recent [IGV](https://igv.org/doc/desktop/#DownloadPage/) version and visualise your bam file. Make sure you index it first. 
+Important part is data visualisation. Install a recent [IGV](https://igv.org/doc/desktop/#DownloadPage/) version and visualise your bam file. Make sure you index it first and don't forget to set reference genome to hg38.
 
 To look at modified bases, right click on the left panel with bam file name, select `color alignments by` and then `base modifications (6mA)` - or 5mC.
 
 We recommend to check
--  modification patterns at TSS of some highly expressed genes - you should see high accessibility, 
+- modification patterns at TSS of some highly expressed genes - you should see high accessibility, 
 - imprinted regions - you should see haplotype specific methylation patterns
 - CTCF sites (you can load ENCODE ChIP data directly from URL)
 
@@ -168,7 +169,7 @@ We recommend to check
 
 FIRE stands for Fiber-seq Inferred Regulatory Elements and you can think of them as a Fiber-seq equivalent of peaks from ATAC-seq. 
 
-To call FIRE elements and to create BigWig tracks, you need whole genome data. Since we are only working with one chromosome here, we will run `ft fire` to annotate our reads with fire calls. 
+To call FIRE elements and to create BigWig tracks, you need whole genome data. Since we are only working with one chromosome here, we will run `ft fire` to annotate our reads with FIRE calls. 
 
 ```bash
 ft fire -t $THREADS \
@@ -192,9 +193,9 @@ aws s3 cp --no-sign-request --endpoint-url https://s3.kopah.uw.edu \
 There are multiple ways to visualise FIRE pipeline outputs
 
 1. **IGV** <br>
-You load `GM12878-fire-v0.1-hap-differences.bed.gz` and `GM12878-fire-v0.1-hap-differences.bed.gz` to IGV together with your CRAM or BAM file. This will allow you to observe FIRE regions visually
+Set your genome to hg38. You load `GM12878-fire-v0.1-peaks.bed.gz` and `GM12878-fire-v0.1-hap-differences.bed.gz` to IGV together with your CRAM or BAM file. This will allow you to observe FIRE regions visually
 
-2. **UCSC tracks**
+2. **UCSC tracks** <br>
 As output from FIRE pipeline, you also get UCSC track that you can load to UCSC via My data > Track hubs. 
 More info on that here: https://github.com/fiberseq/UCSC-Fiber-seq-hub 
 
@@ -217,7 +218,7 @@ cd $WORKDIR
 
 curl -L -O $DATA_URL/$PREFIX.20x.bam
 samtools index $PREFIX.20x.bam
-samtools coverage $PREFIX.20x.bam
+samtools coverage -r chr20 $PREFIX.20x.bam
 
 samtools view -b -x ns,nl,as,al -@ $THREADS \
   -o $PREFIX.20x.strip.bam $PREFIX.20x.bam
